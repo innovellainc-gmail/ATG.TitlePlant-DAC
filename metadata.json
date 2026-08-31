@@ -1,0 +1,6 @@
+{
+  "name": "Doña Ana County Records Automation",
+  "description": "Production-ready browser automation and indexing suite for the Doña Ana County Public Records portal (donaana.nm.publicsearch.us). Automates search setup, result looping, modal cart ingestion, checkout, and document package retrieval with real-time telemetry.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

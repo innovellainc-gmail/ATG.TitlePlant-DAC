@@ -123,8 +123,35 @@ export default function DonaAnaAutomationDashboard() {
     };
   }, []);
 
+  // Polling fallback to guarantee live updates even through buffered proxies
+  useEffect(() => {
+    if (state.status !== 'running' && state.status !== 'paused') {
+      return;
+    }
+
+    const pollInterval = setInterval(() => {
+      fetch('/api/automation/status')
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.state) setState(data.state);
+          if (data.records) setRecords(data.records);
+          if (data.logs) setLogs(data.logs);
+        })
+        .catch(() => {});
+    }, 650);
+
+    return () => clearInterval(pollInterval);
+  }, [state.status]);
+
   const handleStart = async () => {
     try {
+      // Optimistic update so user immediately sees reaction
+      setState((prev) => ({
+        ...prev,
+        status: 'running',
+        stepDescription: 'Launching automation sequence...',
+      }));
+
       const res = await fetch('/api/automation/start', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -133,6 +160,14 @@ export default function DonaAnaAutomationDashboard() {
       const data = await res.json();
       if (!data.success) {
         alert(`Failed to start: ${data.error}`);
+        // Refresh actual state
+        const statusRes = await fetch('/api/automation/status');
+        const statusData = await statusRes.json();
+        if (statusData.state) setState(statusData.state);
+      } else {
+        if (data.state) setState(data.state);
+        if (data.records) setRecords(data.records);
+        if (data.logs) setLogs(data.logs);
       }
     } catch (err: any) {
       alert(`Error starting automation: ${err.message}`);
@@ -141,11 +176,17 @@ export default function DonaAnaAutomationDashboard() {
 
   const handleControl = async (action: 'pause' | 'resume' | 'stop' | 'reset') => {
     try {
-      await fetch('/api/automation/control', {
+      const res = await fetch('/api/automation/control', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action }),
       });
+      const data = await res.json();
+      if (data.state) setState(data.state);
+      if (action === 'reset') {
+        setRecords([]);
+        setLogs([]);
+      }
     } catch (err) {
       console.error(`Control error for ${action}:`, err);
     }

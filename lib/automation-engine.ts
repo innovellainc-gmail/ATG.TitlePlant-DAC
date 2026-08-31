@@ -69,10 +69,13 @@ class AutomationSessionManager {
   }
 
   public static getInstance(): AutomationSessionManager {
-    if (!AutomationSessionManager.instance) {
-      AutomationSessionManager.instance = new AutomationSessionManager();
+    const globalWithAuto = globalThis as typeof globalThis & {
+      __automationEngine?: AutomationSessionManager;
+    };
+    if (!globalWithAuto.__automationEngine) {
+      globalWithAuto.__automationEngine = new AutomationSessionManager();
     }
-    return AutomationSessionManager.instance;
+    return globalWithAuto.__automationEngine;
   }
 
   public getState(): AutomationState {

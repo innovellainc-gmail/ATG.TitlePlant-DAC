@@ -35,9 +35,12 @@ export const ConfigPanel: React.FC<ConfigPanelProps> = ({ config, state, onChang
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
         {/* Date Range Controls */}
         <div className="space-y-2">
-          <label className="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider">
-            Recording Date Range
-          </label>
+          <div className="flex items-center justify-between">
+            <label className="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider">
+              Recording Date Range
+            </label>
+            <span className="text-[9px] text-blue-600 font-mono font-semibold">Customizable</span>
+          </div>
 
           <div className="grid grid-cols-2 gap-2">
             <div>
@@ -47,7 +50,7 @@ export const ConfigPanel: React.FC<ConfigPanelProps> = ({ config, state, onChang
                 disabled={isRunning}
                 value={config.startDate}
                 onChange={(e) => onChangeConfig({ startDate: e.target.value })}
-                placeholder="01/01/1930"
+                placeholder="MM/DD/YYYY"
                 className="w-full text-xs border border-slate-200 rounded px-2.5 py-1.5 bg-slate-50 font-mono text-slate-800 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 disabled:opacity-60"
               />
             </div>
@@ -58,37 +61,57 @@ export const ConfigPanel: React.FC<ConfigPanelProps> = ({ config, state, onChang
                 disabled={isRunning}
                 value={config.endDate}
                 onChange={(e) => onChangeConfig({ endDate: e.target.value })}
-                placeholder="12/31/1930"
+                placeholder="MM/DD/YYYY"
                 className="w-full text-xs border border-slate-200 rounded px-2.5 py-1.5 bg-slate-50 font-mono text-slate-800 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 disabled:opacity-60"
               />
             </div>
           </div>
 
           {/* Quick Presets */}
-          <div className="flex items-center gap-1.5 pt-1">
+          <div className="flex flex-wrap items-center gap-1 pt-1">
             <button
               type="button"
               disabled={isRunning}
-              onClick={() => setPresetRange('1/1/1930', '12/31/1930')}
-              className="text-[10px] px-2 py-0.5 rounded bg-blue-50 hover:bg-blue-100 text-blue-700 font-semibold border border-blue-200 cursor-pointer disabled:opacity-50 transition-colors"
+              onClick={() => setPresetRange('01/01/1930', '12/31/1930')}
+              className="text-[9px] px-1.5 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold border border-slate-200 cursor-pointer disabled:opacity-50 transition-colors"
             >
-              1930 Full Year
+              1930
             </button>
             <button
               type="button"
               disabled={isRunning}
-              onClick={() => setPresetRange('1/1/1930', '6/30/1930')}
-              className="text-[10px] px-2 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-600 font-medium border border-slate-200 cursor-pointer disabled:opacity-50 transition-colors"
+              onClick={() => setPresetRange('01/01/2000', '12/31/2000')}
+              className="text-[9px] px-1.5 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold border border-slate-200 cursor-pointer disabled:opacity-50 transition-colors"
             >
-              1930 H1
+              2000
             </button>
             <button
               type="button"
               disabled={isRunning}
-              onClick={() => setPresetRange('7/1/1930', '12/31/1930')}
-              className="text-[10px] px-2 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-600 font-medium border border-slate-200 cursor-pointer disabled:opacity-50 transition-colors"
+              onClick={() => setPresetRange('01/01/2020', '12/31/2020')}
+              className="text-[9px] px-1.5 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold border border-slate-200 cursor-pointer disabled:opacity-50 transition-colors"
             >
-              1930 H2
+              2020
+            </button>
+            <button
+              type="button"
+              disabled={isRunning}
+              onClick={() => setPresetRange('01/01/2024', '12/31/2024')}
+              className="text-[9px] px-1.5 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold border border-slate-200 cursor-pointer disabled:opacity-50 transition-colors"
+            >
+              2024
+            </button>
+            <button
+              type="button"
+              disabled={isRunning}
+              onClick={() => {
+                const now = new Date();
+                const yr = now.getFullYear();
+                setPresetRange(`01/01/${yr}`, `12/31/${yr}`);
+              }}
+              className="text-[9px] px-1.5 py-0.5 rounded bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold border border-blue-200 cursor-pointer disabled:opacity-50 transition-colors"
+            >
+              YTD
             </button>
           </div>
         </div>

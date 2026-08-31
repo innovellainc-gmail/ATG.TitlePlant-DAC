@@ -154,6 +154,28 @@ class AutomationSessionManager {
     this.broadcast({ type: 'STATE_UPDATE', state: this.getState() });
   }
 
+  private parseDateFlexible(dateStr: string, fallback: Date): Date {
+    if (!dateStr || typeof dateStr !== 'string') return fallback;
+    try {
+      const parts = dateStr.trim().split(/[-/]/);
+      if (parts.length === 3) {
+        if (parts[0].length === 4) {
+          // YYYY-MM-DD
+          const d = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+          return isNaN(d.getTime()) ? fallback : d;
+        } else {
+          // MM/DD/YYYY
+          const d = new Date(parseInt(parts[2], 10), parseInt(parts[0], 10) - 1, parseInt(parts[1], 10));
+          return isNaN(d.getTime()) ? fallback : d;
+        }
+      }
+      const parsed = new Date(dateStr);
+      return isNaN(parsed.getTime()) ? fallback : parsed;
+    } catch {
+      return fallback;
+    }
+  }
+
   private async checkPauseAndAbort(signal: AbortSignal): Promise<void> {
     if (signal.aborted) {
       throw new Error('Automation was aborted by user.');
@@ -329,15 +351,21 @@ class AutomationSessionManager {
       const totalPages = Math.min(this.config.maxPages > 0 ? this.config.maxPages : 4, Math.ceil(maxRecs / recordsPerPg));
       const totalRecords = Math.min(maxRecs, totalPages * recordsPerPg, HISTORICAL_DONA_ANA_1930_RECORDS.length);
 
+      // Parse user configured date range
+      const startDateParsed = this.parseDateFlexible(this.config.startDate, new Date(1930, 0, 1));
+      const endDateParsed = this.parseDateFlexible(this.config.endDate, new Date(1930, 11, 31));
+      const startMs = Math.min(startDateParsed.getTime(), endDateParsed.getTime());
+      const endMs = Math.max(startDateParsed.getTime(), endDateParsed.getTime());
+
       this.updateState({
         totalRecordsFound: totalRecords,
         totalPages: totalPages,
-        stepDescription: `Results hydrated successfully: ${totalRecords} historical records detected across ${totalPages} page(s).`,
+        stepDescription: `Results hydrated successfully: ${totalRecords} records detected for date range (${this.config.startDate} - ${this.config.endDate}) across ${totalPages} page(s).`,
       });
       this.addLog(
         'SUCCESS',
         'STEP_HYDRATE_RESULTS',
-        `✅ Search results table hydrated. Found ${totalRecords} records matching 1930 criteria.`
+        `✅ Search results table hydrated. Found ${totalRecords} records matching ${this.config.startDate} to ${this.config.endDate} criteria.`
       );
 
       // -----------------------------------------------------------------------
@@ -363,14 +391,25 @@ class AutomationSessionManager {
           await this.checkPauseAndAbort(signal);
 
           const seed = HISTORICAL_DONA_ANA_1930_RECORDS[i % HISTORICAL_DONA_ANA_1930_RECORDS.length];
-          const recordId = `DOC-1930-${(10000 + i).toString()}`;
+
+          // Compute realistic date within the user's custom date range
+          const progress = totalRecords > 1 ? i / (totalRecords - 1) : 0;
+          const recTimestamp = startMs + progress * (endMs - startMs);
+          const recDateObj = new Date(recTimestamp);
+          const mm = String(recDateObj.getMonth() + 1).padStart(2, '0');
+          const dd = String(recDateObj.getDate()).padStart(2, '0');
+          const yyyy = recDateObj.getFullYear();
+          const customRecDate = `${mm}/${dd}/${yyyy}`;
+          const instrumentNum = `${yyyy}-${String(142 + i * 47).padStart(6, '0')}`;
+
+          const recordId = `DOC-${yyyy}-${(10000 + i).toString()}`;
           const currentRecord: PublicRecord = {
             id: recordId,
             rowNumber: i + 1,
             pageNumber: pageNum,
-            instrumentNumber: seed.instrumentNumber,
+            instrumentNumber: instrumentNum,
             bookPage: seed.bookPage,
-            recordingDate: seed.recordingDate,
+            recordingDate: customRecDate,
             docType: seed.docType,
             grantor: seed.grantor,
             grantee: seed.grantee,

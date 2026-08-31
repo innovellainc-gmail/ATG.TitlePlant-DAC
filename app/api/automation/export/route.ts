@@ -67,10 +67,12 @@ export async function GET(req: NextRequest) {
 
   const csvContent = [headers.join(','), ...rows.map((row) => row.join(','))].join('\n');
 
+  const dateRangeLabel = `${config.startDate.replace(/\//g, '-')}_to_${config.endDate.replace(/\//g, '-')}`;
+
   return new NextResponse(csvContent, {
     headers: {
       'Content-Type': 'text/csv; charset=utf-8',
-      'Content-Disposition': `attachment; filename="dona_ana_records_1930_${Date.now()}.csv"`,
+      'Content-Disposition': `attachment; filename="dona_ana_records_${dateRangeLabel}_${Date.now()}.csv"`,
     },
   });
 }

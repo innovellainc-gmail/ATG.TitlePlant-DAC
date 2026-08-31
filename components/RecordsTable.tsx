@@ -170,7 +170,7 @@ export const RecordsTable: React.FC<RecordsTableProps> = ({
               <th className="py-2.5 px-3">Grantee (Party 2)</th>
               <th className="py-2.5 px-3">Legal Description</th>
               <th className="py-2.5 px-3">Cart Status</th>
-              <th className="py-2.5 px-3 text-right">Inspect</th>
+              <th className="py-2.5 px-3 text-right">Actions & Downloads</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
@@ -214,13 +214,37 @@ export const RecordsTable: React.FC<RecordsTableProps> = ({
                   </td>
                   <td className="py-2.5 px-3">{getStatusBadge(rec.cartStatus)}</td>
                   <td className="py-2.5 px-3 text-right">
-                    <button
-                      onClick={() => setSelectedRecord(rec)}
-                      className="p-1 rounded text-slate-400 hover:text-blue-600 hover:bg-slate-100 cursor-pointer"
-                      title="Inspect Record Details"
-                    >
-                      <Eye className="w-4 h-4" />
-                    </button>
+                    <div className="flex items-center justify-end gap-1.5">
+                      <a
+                        href={`/api/automation/document-pdf?id=${rec.id}`}
+                        download={`DOC_${rec.instrumentNumber}_${rec.docType.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-1 px-2 py-1 rounded bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-[10px] font-bold cursor-pointer transition-colors"
+                        title="Download Document PDF"
+                      >
+                        <Download className="w-3 h-3 text-blue-600" />
+                        <span>PDF</span>
+                      </a>
+                      <a
+                        href={`/api/automation/document-pdf?id=${rec.id}&format=json`}
+                        download={`DOC_${rec.instrumentNumber}_DETAILS.json`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-1 px-2 py-1 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 text-[10px] font-medium cursor-pointer transition-colors"
+                        title="Download Document Details (JSON)"
+                      >
+                        <FileText className="w-3 h-3 text-slate-500" />
+                        <span>Details</span>
+                      </a>
+                      <button
+                        onClick={() => setSelectedRecord(rec)}
+                        className="p-1 rounded text-slate-400 hover:text-blue-600 hover:bg-slate-100 cursor-pointer"
+                        title="Inspect Record Details"
+                      >
+                        <Eye className="w-4 h-4" />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))
@@ -232,13 +256,16 @@ export const RecordsTable: React.FC<RecordsTableProps> = ({
       {/* Record Inspector Drawer Modal */}
       {selectedRecord && (
         <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-in fade-in">
-          <div className="bg-white rounded-lg border border-slate-200 max-w-lg w-full p-5 shadow-2xl space-y-4">
+          <div className="bg-white rounded-lg border border-slate-200 max-w-xl w-full p-5 shadow-2xl space-y-4">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div className="flex items-center gap-2">
                 <FileText className="w-5 h-5 text-blue-600" />
-                <h4 className="font-bold text-slate-900 text-sm">
-                  Document Index Card: #{selectedRecord.instrumentNumber}
-                </h4>
+                <div>
+                  <h4 className="font-bold text-slate-900 text-sm">
+                    Document #{selectedRecord.instrumentNumber}
+                  </h4>
+                  <span className="text-[10px] font-mono text-slate-400">Doña Ana County Official Record</span>
+                </div>
               </div>
               <button
                 onClick={() => setSelectedRecord(null)}
@@ -284,6 +311,45 @@ export const RecordsTable: React.FC<RecordsTableProps> = ({
               </div>
             </div>
 
+            {/* Document Downloads Deck */}
+            <div className="p-3.5 rounded-lg bg-slate-50 border border-slate-200 space-y-2">
+              <span className="text-[10px] font-bold text-slate-600 uppercase tracking-wider block">
+                Direct Document Downloads
+              </span>
+              <div className="flex flex-wrap items-center gap-2">
+                <a
+                  href={`/api/automation/document-pdf?id=${selectedRecord.id}`}
+                  download={`DOC_${selectedRecord.instrumentNumber}_${selectedRecord.docType.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-xs cursor-pointer transition-colors"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>Download .PDF File</span>
+                </a>
+                <a
+                  href={`/api/automation/document-pdf?id=${selectedRecord.id}&format=json`}
+                  download={`DOC_${selectedRecord.instrumentNumber}_DETAILS.json`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex items-center gap-1.5 px-3 py-2 rounded bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 text-xs font-semibold cursor-pointer transition-colors"
+                >
+                  <FileText className="w-3.5 h-3.5 text-slate-500" />
+                  <span>Details (JSON)</span>
+                </a>
+                <a
+                  href={`/api/automation/document-pdf?id=${selectedRecord.id}&format=txt`}
+                  download={`DOC_${selectedRecord.instrumentNumber}_DETAILS.txt`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex items-center gap-1.5 px-3 py-2 rounded bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 text-xs font-semibold cursor-pointer transition-colors"
+                >
+                  <FileText className="w-3.5 h-3.5 text-slate-500" />
+                  <span>Details (TXT)</span>
+                </a>
+              </div>
+            </div>
+
             <div className="flex items-center justify-between pt-2 border-t border-slate-100">
               <div className="flex items-center gap-1.5">
                 <span className="text-xs text-slate-400">Cart Status:</span>
@@ -293,7 +359,7 @@ export const RecordsTable: React.FC<RecordsTableProps> = ({
                 onClick={() => setSelectedRecord(null)}
                 className="px-4 py-1.5 rounded bg-slate-900 text-white text-xs font-bold hover:bg-slate-800 cursor-pointer"
               >
-                Done
+                Close
               </button>
             </div>
           </div>

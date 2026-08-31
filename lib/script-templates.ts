@@ -28,7 +28,7 @@ const path = require('path');
 const CONFIG = {
   portalUrl: 'https://donaana.nm.publicsearch.us/',
   startDate: '1/1/1930',
-  endDate: '12/31/1930',
+  endDate: '5/31/1930',
   headless: false, // Set to true for automated background runs
   slowMoMs: 250, // Slight delay to stabilize DOM animations
   throttlePerItemMs: 800, // Safe rate limiting interval between row actions
@@ -590,7 +590,7 @@ from playwright.async_api import async_playwright
 CONFIG = {
     "portal_url": "https://donaana.nm.publicsearch.us/",
     "start_date": "1/1/1930",
-    "end_date": "12/31/1930",
+    "end_date": "5/31/1930",
     "headless": False,
     "throttle_ms": 800,
     "output_dir": "./dona_ana_downloads",

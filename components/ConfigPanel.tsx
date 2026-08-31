@@ -72,26 +72,19 @@ export const ConfigPanel: React.FC<ConfigPanelProps> = ({ config, state, onChang
             <button
               type="button"
               disabled={isRunning}
-              onClick={() => setPresetRange('01/01/1930', '12/31/1930')}
-              className="text-[9px] px-1.5 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold border border-slate-200 cursor-pointer disabled:opacity-50 transition-colors"
+              onClick={() => setPresetRange('1/1/1930', '5/31/1930')}
+              className="text-[9px] px-2 py-0.5 rounded bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold border border-blue-200 cursor-pointer disabled:opacity-50 transition-colors"
+              title="Official 7 verified records from Doña Ana County portal"
             >
-              1930
+              1/1/1930 - 5/31/1930 (7 Docs)
             </button>
             <button
               type="button"
               disabled={isRunning}
-              onClick={() => setPresetRange('01/01/2000', '12/31/2000')}
+              onClick={() => setPresetRange('1/1/1930', '12/31/1930')}
               className="text-[9px] px-1.5 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold border border-slate-200 cursor-pointer disabled:opacity-50 transition-colors"
             >
-              2000
-            </button>
-            <button
-              type="button"
-              disabled={isRunning}
-              onClick={() => setPresetRange('01/01/2020', '12/31/2020')}
-              className="text-[9px] px-1.5 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold border border-slate-200 cursor-pointer disabled:opacity-50 transition-colors"
-            >
-              2020
+              1930 (Full Year)
             </button>
             <button
               type="button"
@@ -109,7 +102,7 @@ export const ConfigPanel: React.FC<ConfigPanelProps> = ({ config, state, onChang
                 const yr = now.getFullYear();
                 setPresetRange(`01/01/${yr}`, `12/31/${yr}`);
               }}
-              className="text-[9px] px-1.5 py-0.5 rounded bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold border border-blue-200 cursor-pointer disabled:opacity-50 transition-colors"
+              className="text-[9px] px-1.5 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold border border-slate-200 cursor-pointer disabled:opacity-50 transition-colors"
             >
               YTD
             </button>

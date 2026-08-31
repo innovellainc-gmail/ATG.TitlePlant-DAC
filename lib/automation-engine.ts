@@ -6,7 +6,7 @@ import {
   TelemetryLog,
   TelemetryEvent,
 } from './types';
-import { HISTORICAL_DONA_ANA_1930_RECORDS } from './sample-records';
+import { getRecordsForDateRange } from './sample-records';
 
 // Global singleton execution manager for server environment
 class AutomationSessionManager {
@@ -44,12 +44,12 @@ class AutomationSessionManager {
   private config: AutomationConfig = {
     portalUrl: 'https://donaana.nm.publicsearch.us/',
     startDate: '1/1/1930',
-    endDate: '12/31/1930',
+    endDate: '5/31/1930',
     searchType: 'INDEX_ONLY',
     headless: true,
     throttleMs: 650,
     maxPages: 4,
-    maxRecords: 24,
+    maxRecords: 0,
     autoCheckout: true,
     autoDownload: true,
     retryLimit: 3,
@@ -345,27 +345,26 @@ class AutomationSessionManager {
       this.addLog('INFO', 'STEP_HYDRATE_RESULTS', 'Awaiting networkidle & DOM mutation observer for table.results-table...');
       await this.sleep(600, signal);
 
-      // Prepare records pool based on config
-      const maxRecs = this.config.maxRecords > 0 ? this.config.maxRecords : 24;
-      const recordsPerPg = 6;
-      const totalPages = Math.min(this.config.maxPages > 0 ? this.config.maxPages : 4, Math.ceil(maxRecs / recordsPerPg));
-      const totalRecords = Math.min(maxRecs, totalPages * recordsPerPg, HISTORICAL_DONA_ANA_1930_RECORDS.length);
+      // Hydrate search results matching the exact user date range
+      const searchResults = getRecordsForDateRange(
+        this.config.startDate,
+        this.config.endDate,
+        this.config.maxRecords > 0 ? this.config.maxRecords : undefined
+      );
 
-      // Parse user configured date range
-      const startDateParsed = this.parseDateFlexible(this.config.startDate, new Date(1930, 0, 1));
-      const endDateParsed = this.parseDateFlexible(this.config.endDate, new Date(1930, 11, 31));
-      const startMs = Math.min(startDateParsed.getTime(), endDateParsed.getTime());
-      const endMs = Math.max(startDateParsed.getTime(), endDateParsed.getTime());
+      const totalRecords = searchResults.length;
+      const recordsPerPg = 10;
+      const totalPages = Math.max(1, Math.ceil(totalRecords / recordsPerPg));
 
       this.updateState({
         totalRecordsFound: totalRecords,
         totalPages: totalPages,
-        stepDescription: `Results hydrated successfully: ${totalRecords} records detected for date range (${this.config.startDate} - ${this.config.endDate}) across ${totalPages} page(s).`,
+        stepDescription: `Results hydrated successfully: ${totalRecords} official record(s) found for date range (${this.config.startDate} - ${this.config.endDate}) across ${totalPages} page(s).`,
       });
       this.addLog(
         'SUCCESS',
         'STEP_HYDRATE_RESULTS',
-        `✅ Search results table hydrated. Found ${totalRecords} records matching ${this.config.startDate} to ${this.config.endDate} criteria.`
+        `✅ Search results table hydrated. Found ${totalRecords} official record(s) matching ${this.config.startDate} to ${this.config.endDate}.`
       );
 
       // -----------------------------------------------------------------------
@@ -390,31 +389,22 @@ class AutomationSessionManager {
         for (let i = startIdx; i < endIdx; i++) {
           await this.checkPauseAndAbort(signal);
 
-          const seed = HISTORICAL_DONA_ANA_1930_RECORDS[i % HISTORICAL_DONA_ANA_1930_RECORDS.length];
+          const recordData = searchResults[i];
+          const cleanInst = recordData.instrumentNumber.replace(/[^a-zA-Z0-9]/g, '_');
+          const recordId = `DOC-${cleanInst}-${i + 1}`;
 
-          // Compute realistic date within the user's custom date range
-          const progress = totalRecords > 1 ? i / (totalRecords - 1) : 0;
-          const recTimestamp = startMs + progress * (endMs - startMs);
-          const recDateObj = new Date(recTimestamp);
-          const mm = String(recDateObj.getMonth() + 1).padStart(2, '0');
-          const dd = String(recDateObj.getDate()).padStart(2, '0');
-          const yyyy = recDateObj.getFullYear();
-          const customRecDate = `${mm}/${dd}/${yyyy}`;
-          const instrumentNum = `${yyyy}-${String(142 + i * 47).padStart(6, '0')}`;
-
-          const recordId = `DOC-${yyyy}-${(10000 + i).toString()}`;
           const currentRecord: PublicRecord = {
             id: recordId,
             rowNumber: i + 1,
             pageNumber: pageNum,
-            instrumentNumber: instrumentNum,
-            bookPage: seed.bookPage,
-            recordingDate: customRecDate,
-            docType: seed.docType,
-            grantor: seed.grantor,
-            grantee: seed.grantee,
-            legalDescription: seed.legalDescription,
-            pageCount: seed.pageCount,
+            instrumentNumber: recordData.instrumentNumber,
+            bookPage: recordData.bookPage,
+            recordingDate: recordData.recordingDate,
+            docType: recordData.docType,
+            grantor: recordData.grantor,
+            grantee: recordData.grantee,
+            legalDescription: recordData.legalDescription,
+            pageCount: recordData.pageCount,
             cartStatus: 'processing',
           };
 

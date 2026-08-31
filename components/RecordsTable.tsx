@@ -15,6 +15,12 @@ import {
   FileImage,
   X,
   Maximize2,
+  ZoomIn,
+  ZoomOut,
+  RotateCcw,
+  Sparkles,
+  ShieldCheck,
+  Printer,
 } from 'lucide-react';
 import { PublicRecord } from '@/lib/types';
 
@@ -35,6 +41,8 @@ export const RecordsTable: React.FC<RecordsTableProps> = ({
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [selectedRecord, setSelectedRecord] = useState<PublicRecord | null>(null);
   const [viewingOriginalRecord, setViewingOriginalRecord] = useState<PublicRecord | null>(null);
+  const [viewerTab, setViewerTab] = useState<'document' | 'raw_pdf'>('document');
+  const [zoomLevel, setZoomLevel] = useState(100);
 
   const filtered = records.filter((rec) => {
     if (statusFilter !== 'ALL' && rec.cartStatus !== statusFilter) {
@@ -402,10 +410,10 @@ export const RecordsTable: React.FC<RecordsTableProps> = ({
 
       {/* Dedicated Original Document Image .PDF Viewer Modal */}
       {viewingOriginalRecord && (
-        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-in fade-in">
-          <div className="bg-white rounded-xl border border-slate-200 max-w-5xl w-full h-[90vh] shadow-2xl flex flex-col overflow-hidden">
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-xs flex items-center justify-center p-3 sm:p-5 z-50 animate-in fade-in">
+          <div className="bg-white rounded-xl border border-slate-200 max-w-5xl w-full h-[92vh] shadow-2xl flex flex-col overflow-hidden">
             {/* Modal Header */}
-            <div className="flex items-center justify-between px-5 py-3.5 bg-slate-900 text-white border-b border-slate-800 shrink-0">
+            <div className="flex flex-wrap items-center justify-between px-5 py-3 bg-slate-900 text-white border-b border-slate-800 shrink-0 gap-3">
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-lg bg-amber-500/20 border border-amber-500/30 flex items-center justify-center">
                   <FileImage className="w-4 h-4 text-amber-400" />
@@ -413,29 +421,82 @@ export const RecordsTable: React.FC<RecordsTableProps> = ({
                 <div>
                   <div className="flex items-center gap-2">
                     <h3 className="font-bold text-sm text-slate-100">
-                      Original Document Image .PDF — Inst #{viewingOriginalRecord.instrumentNumber}
+                      Original Document Image — Inst #{viewingOriginalRecord.instrumentNumber}
                     </h3>
                     <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
                       {viewingOriginalRecord.docType}
                     </span>
                   </div>
                   <p className="text-[11px] text-slate-400 font-mono">
-                    Book/Page: {viewingOriginalRecord.bookPage} • Recorded: {viewingOriginalRecord.recordingDate} • {viewingOriginalRecord.grantor} ➔ {viewingOriginalRecord.grantee}
+                    Book/Page: {viewingOriginalRecord.bookPage} • Recorded: {viewingOriginalRecord.recordingDate}
                   </p>
                 </div>
               </div>
 
+              {/* Viewer Mode & Actions */}
               <div className="flex items-center gap-2">
+                {/* View switcher tabs */}
+                <div className="flex items-center bg-slate-800 p-0.5 rounded-lg border border-slate-700 text-xs">
+                  <button
+                    onClick={() => setViewerTab('document')}
+                    className={`px-2.5 py-1 rounded-md font-semibold cursor-pointer transition-colors ${
+                      viewerTab === 'document'
+                        ? 'bg-amber-500 text-slate-950 font-bold shadow-xs'
+                        : 'text-slate-300 hover:text-white'
+                    }`}
+                  >
+                    Original Ledger Image
+                  </button>
+                  <button
+                    onClick={() => setViewerTab('raw_pdf')}
+                    className={`px-2.5 py-1 rounded-md font-semibold cursor-pointer transition-colors ${
+                      viewerTab === 'raw_pdf'
+                        ? 'bg-amber-500 text-slate-950 font-bold shadow-xs'
+                        : 'text-slate-300 hover:text-white'
+                    }`}
+                  >
+                    Browser PDF Stream
+                  </button>
+                </div>
+
+                {viewerTab === 'document' && (
+                  <div className="flex items-center bg-slate-800 rounded-lg border border-slate-700 px-1 py-0.5 text-xs text-slate-300">
+                    <button
+                      onClick={() => setZoomLevel((z) => Math.max(70, z - 15))}
+                      className="p-1 hover:text-white cursor-pointer"
+                      title="Zoom Out"
+                    >
+                      <ZoomOut className="w-3.5 h-3.5" />
+                    </button>
+                    <span className="px-1.5 text-[10px] font-mono font-bold text-amber-400">{zoomLevel}%</span>
+                    <button
+                      onClick={() => setZoomLevel((z) => Math.min(160, z + 15))}
+                      className="p-1 hover:text-white cursor-pointer"
+                      title="Zoom In"
+                    >
+                      <ZoomIn className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      onClick={() => setZoomLevel(100)}
+                      className="p-1 hover:text-white cursor-pointer ml-0.5 border-l border-slate-700"
+                      title="Reset Zoom"
+                    >
+                      <RotateCcw className="w-3 h-3" />
+                    </button>
+                  </div>
+                )}
+
                 <a
                   href={`/api/automation/document-pdf?id=${viewingOriginalRecord.id}&type=original&view=inline`}
                   target="_blank"
                   rel="noreferrer"
                   className="flex items-center gap-1 px-2.5 py-1.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold cursor-pointer transition-colors"
-                  title="Open in new window"
+                  title="Open PDF directly in a new browser window"
                 >
                   <ExternalLink className="w-3.5 h-3.5" />
-                  <span>Full Screen</span>
+                  <span className="hidden sm:inline">New Tab</span>
                 </a>
+
                 <a
                   href={`/api/automation/document-pdf?id=${viewingOriginalRecord.id}&type=original`}
                   download={`ORIGINAL_IMAGE_DOC_${viewingOriginalRecord.instrumentNumber}_${viewingOriginalRecord.docType.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`}
@@ -443,8 +504,9 @@ export const RecordsTable: React.FC<RecordsTableProps> = ({
                   title="Download Original Document Image PDF"
                 >
                   <Download className="w-3.5 h-3.5" />
-                  <span>Export Original .PDF</span>
+                  <span>Export .PDF</span>
                 </a>
+
                 <button
                   onClick={() => setViewingOriginalRecord(null)}
                   className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 cursor-pointer ml-1"
@@ -454,29 +516,168 @@ export const RecordsTable: React.FC<RecordsTableProps> = ({
               </div>
             </div>
 
-            {/* Modal Body / Embedded PDF Viewer */}
-            <div className="flex-1 bg-slate-100 p-2 overflow-hidden relative">
-              <iframe
-                src={`/api/automation/document-pdf?id=${viewingOriginalRecord.id}&type=original&view=inline`}
-                className="w-full h-full rounded border border-slate-300 bg-white shadow-inner"
-                title={`Original Document Image - ${viewingOriginalRecord.instrumentNumber}`}
-              />
+            {/* Modal Body */}
+            <div className="flex-1 bg-slate-200/90 p-4 overflow-auto flex justify-center items-start relative">
+              {viewerTab === 'document' ? (
+                /* High-fidelity Photostatic Microfiche / County Record Image Sheet */
+                <div
+                  style={{
+                    transform: `scale(${zoomLevel / 100})`,
+                    transformOrigin: 'top center',
+                    transition: 'transform 0.15s ease-out',
+                  }}
+                  className="bg-[#f9f7f0] text-slate-900 w-full max-w-[780px] p-8 sm:p-10 shadow-2xl rounded border-2 border-stone-400 font-serif relative shrink-0 my-2 select-text"
+                >
+                  {/* Ledger Header Bar */}
+                  <div className="bg-stone-900 text-stone-100 text-[10px] font-mono font-bold px-3 py-1 mb-4 flex items-center justify-between tracking-wide">
+                    <span>DOÑA ANA COUNTY CLERK ARCHIVAL REPOSITORY</span>
+                    <span>ORIGINAL SCANNED DOCUMENT IMAGE</span>
+                    <span>INST #{viewingOriginalRecord.instrumentNumber}</span>
+                  </div>
+
+                  {/* Red Archival Filing Stamp */}
+                  <div className="absolute top-16 right-8 sm:right-10 border-2 border-red-800 bg-red-50/70 p-2.5 text-red-900 w-52 font-sans rotate-[-1.5deg] shadow-xs">
+                    <div className="text-[10px] font-black uppercase text-center tracking-wider border-b border-red-700 pb-0.5 mb-1">
+                      FILED FOR RECORD
+                    </div>
+                    <div className="text-[9px] font-bold text-center leading-tight">DOÑA ANA COUNTY, NEW MEXICO</div>
+                    <div className="text-[8.5px] font-mono text-center my-0.5">DATE: {viewingOriginalRecord.recordingDate} AT 9:00 A.M.</div>
+                    <div className="text-[9px] font-mono font-bold text-slate-950 text-center">INST. NO: {viewingOriginalRecord.instrumentNumber}</div>
+                    <div className="text-[8.5px] font-mono text-center">BOOK & PAGE: {viewingOriginalRecord.bookPage}</div>
+                    <div className="text-[7.5px] text-center font-bold text-red-800 mt-1 uppercase">County Clerk & Ex-Officio Recorder</div>
+                  </div>
+
+                  {/* Ledger Title */}
+                  <div className="pr-56 mb-6">
+                    <p className="text-[10px] font-mono font-bold text-stone-600 uppercase">
+                      RECORD OF OFFICIAL INSTRUMENTS — STATE OF NEW MEXICO
+                    </p>
+                    <h2 className="text-2xl font-black tracking-tight text-stone-900 uppercase mt-1">
+                      {viewingOriginalRecord.docType}
+                    </h2>
+                    <p className="text-xs font-mono text-stone-700 mt-1">
+                      Recorded in: <strong className="text-stone-900">{viewingOriginalRecord.bookPage}</strong>
+                    </p>
+                  </div>
+
+                  {/* Document Legal Text Body */}
+                  <div className="space-y-4 text-xs sm:text-[13px] leading-relaxed text-stone-900 border-t border-stone-300 pt-4 font-serif">
+                    <p>
+                      <strong>THIS INDENTURE</strong>, made and entered into this <strong>{viewingOriginalRecord.recordingDate}</strong>, by and between{' '}
+                      <span className="font-bold underline decoration-stone-400">{viewingOriginalRecord.grantor}</span>, party of the first part, and{' '}
+                      <span className="font-bold underline decoration-stone-400">{viewingOriginalRecord.grantee}</span>, party of the second part, both of the County of Doña Ana and State of New Mexico;
+                    </p>
+
+                    <p>
+                      <strong>WITNESSETH:</strong> That the said party of the first part, for and in consideration of the sum of Ten Dollars ($10.00) and other good and valuable consideration to them in hand paid by the said party of the second part, receipt whereof is hereby confessed and acknowledged, have remised, released, sold, conveyed, and confirmed unto the said party of the second part, their heirs, executors, administrators, and assigns forever, all the following described real estate situated in Doña Ana County, State of New Mexico:
+                    </p>
+
+                    {/* Highlighted Legal Description Block */}
+                    <div className="p-3.5 bg-stone-100/90 border border-stone-400 rounded font-mono text-xs text-stone-900 shadow-2xs my-2">
+                      <span className="text-[10px] font-bold text-stone-500 uppercase block mb-1">Legal Description of Real Property:</span>
+                      <p className="font-bold text-stone-950 text-sm">
+                        &quot;{viewingOriginalRecord.legalDescription}&quot;
+                      </p>
+                    </div>
+
+                    <p>
+                      <strong>TOGETHER</strong> with all and singular the tenements, hereditaments, and appurtenances thereunto belonging or in anywise appertaining, and the reversion and reversions, remainder and remainders, rents, issues, and profits thereof; and all the estate, right, title, interest, claim, and demand whatsoever of the party of the first part.
+                    </p>
+
+                    <p>
+                      <strong>TO HAVE AND TO HOLD</strong> the above-described premises unto the said party of the second part, their heirs, and assigns forever, free and clear from all former and other grants, bargains, sales, liens, taxes, assessments, and encumbrances.
+                    </p>
+                  </div>
+
+                  {/* Signatures and Notary Section */}
+                  <div className="mt-8 pt-6 border-t-2 border-stone-300 grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    {/* Grantor Signature Line */}
+                    <div className="space-y-4">
+                      <p className="text-[11px] italic text-stone-700">IN WITNESS WHEREOF, the Grantor has signed and sealed:</p>
+                      <div className="border-b-2 border-stone-800 pt-6"></div>
+                      <p className="font-mono font-bold text-xs text-stone-900">
+                        {viewingOriginalRecord.grantor} <span className="text-[10px] font-normal text-stone-600">[SEAL]</span>
+                      </p>
+                    </div>
+
+                    {/* Notary Seal & Certificate */}
+                    <div className="border border-stone-400 p-3 bg-stone-50 rounded text-[11px] relative">
+                      <div className="font-bold text-stone-900 uppercase text-[9px] mb-1">State of New Mexico, County of Doña Ana, ss:</div>
+                      <p className="text-[10.5px] leading-snug text-stone-800">
+                        On this {viewingOriginalRecord.recordingDate}, before me personally appeared {viewingOriginalRecord.grantor}, known to me to be the person described in and who executed the foregoing instrument.
+                      </p>
+                      <div className="mt-3 flex items-center justify-between">
+                        <div>
+                          <div className="border-b border-stone-700 w-28"></div>
+                          <span className="text-[8.5px] text-stone-600 font-sans font-bold">Notary Public</span>
+                        </div>
+                        {/* Circular Notary Seal */}
+                        <div className="w-12 h-12 rounded-full border-2 border-blue-900 flex flex-col items-center justify-center text-[7px] font-bold text-blue-900 uppercase rotate-12">
+                          <span>NOTARY</span>
+                          <span>SEAL</span>
+                          <span className="text-[5.5px]">DONA ANA</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Footnote */}
+                  <div className="mt-8 pt-3 border-t border-stone-300 flex items-center justify-between text-[9px] font-mono text-stone-500">
+                    <span>PUBLICSEARCH.US DOÑA ANA COUNTY CLERK ARCHIVE</span>
+                    <span>PAGE 1 OF {viewingOriginalRecord.pageCount}</span>
+                    <span>CART EXPORT CERTIFIED</span>
+                  </div>
+                </div>
+              ) : (
+                /* Raw PDF fallback frame with Edge sandbox helper */
+                <div className="w-full h-full flex flex-col">
+                  <div className="p-2 mb-2 bg-amber-50 border border-amber-200 rounded text-xs text-amber-800 flex items-center justify-between">
+                    <span>
+                      <strong>Notice for Microsoft Edge:</strong> If your browser blocks embedded PDF rendering inside iframes, click <strong>&quot;New Tab&quot;</strong> or switch back to the <strong>&quot;Original Ledger Image&quot;</strong> tab above.
+                    </span>
+                    <a
+                      href={`/api/automation/document-pdf?id=${viewingOriginalRecord.id}&type=original&view=inline`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="px-2 py-0.5 rounded bg-amber-600 hover:bg-amber-700 text-white font-bold text-[11px] cursor-pointer ml-2 shrink-0"
+                    >
+                      Open Stream in New Tab
+                    </a>
+                  </div>
+                  <iframe
+                    src={`/api/automation/document-pdf?id=${viewingOriginalRecord.id}&type=original&view=inline`}
+                    className="w-full flex-1 rounded border border-slate-300 bg-white shadow-inner"
+                    title={`Original Document Image - ${viewingOriginalRecord.instrumentNumber}`}
+                  />
+                </div>
+              )}
             </div>
 
             {/* Modal Footer */}
-            <div className="px-5 py-2.5 bg-slate-50 border-t border-slate-200 flex items-center justify-between text-xs text-slate-600 shrink-0">
+            <div className="px-5 py-2.5 bg-slate-50 border-t border-slate-200 flex flex-wrap items-center justify-between text-xs text-slate-600 shrink-0 gap-2">
               <div className="flex items-center gap-2">
                 <span className="font-semibold text-slate-700">Source:</span>
                 <span>Doña Ana County Clerk & Recorder Cart Public Record Image</span>
                 <span className="text-slate-300">•</span>
-                <span>Page Count: {viewingOriginalRecord.pageCount} Page(s)</span>
+                <span>Instrument #{viewingOriginalRecord.instrumentNumber}</span>
+                <span className="text-slate-300">•</span>
+                <span>{viewingOriginalRecord.pageCount} Page(s)</span>
               </div>
-              <button
-                onClick={() => setViewingOriginalRecord(null)}
-                className="px-3 py-1 rounded bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-bold cursor-pointer"
-              >
-                Close Viewer
-              </button>
+              <div className="flex items-center gap-2">
+                <a
+                  href={`/api/automation/document-pdf?id=${viewingOriginalRecord.id}&type=original`}
+                  download={`ORIGINAL_IMAGE_DOC_${viewingOriginalRecord.instrumentNumber}_${viewingOriginalRecord.docType.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`}
+                  className="px-3 py-1 rounded bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold cursor-pointer transition-colors shadow-2xs"
+                >
+                  Export .PDF File
+                </a>
+                <button
+                  onClick={() => setViewingOriginalRecord(null)}
+                  className="px-3 py-1 rounded bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-bold cursor-pointer"
+                >
+                  Close
+                </button>
+              </div>
             </div>
           </div>
         </div>

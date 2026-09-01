@@ -10,7 +10,7 @@ export async function GET(req: NextRequest) {
     const id = searchParams.get('id');
     const instrument = searchParams.get('instrument');
     const format = searchParams.get('format') || 'pdf';
-    const type = searchParams.get('type') || 'generated'; // 'original' | 'generated'
+    const type = searchParams.get('type') || 'original'; // Default to original document image as retrieved from cart
     const view = searchParams.get('view') === 'inline';
 
     const records = automationEngine.getRecords();
@@ -87,14 +87,14 @@ TIMESTAMP          : ${new Date().toISOString()}
       });
     }
 
-    // Original Document Image from Cart requested
-    if (type === 'original' || type === 'original_image' || format === 'original_pdf') {
-      const originalPdfBytes = await generateOriginalDocumentImagePdf(record);
+    // Generated official record summary PDF explicitly requested
+    if (type === 'generated') {
+      const pdfBytes = await generateRecordPdf(record);
       const disposition = view
         ? 'inline'
-        : `attachment; filename="ORIGINAL_IMAGE_DOC_${record.instrumentNumber}_${record.docType.replace(/[^a-zA-Z0-9]/g, '_')}.pdf"`;
+        : `attachment; filename="DOC_${record.instrumentNumber}_${record.docType.replace(/[^a-zA-Z0-9]/g, '_')}.pdf"`;
 
-      return new NextResponse(Buffer.from(originalPdfBytes), {
+      return new NextResponse(Buffer.from(pdfBytes), {
         headers: {
           'Content-Type': 'application/pdf',
           'Content-Disposition': disposition,
@@ -102,13 +102,13 @@ TIMESTAMP          : ${new Date().toISOString()}
       });
     }
 
-    // Default: Generated official record summary PDF
-    const pdfBytes = await generateRecordPdf(record);
+    // Default: Original raw photostatic document image PDF as retrieved from website cart
+    const originalPdfBytes = await generateOriginalDocumentImagePdf(record);
     const disposition = view
       ? 'inline'
-      : `attachment; filename="DOC_${record.instrumentNumber}_${record.docType.replace(/[^a-zA-Z0-9]/g, '_')}.pdf"`;
+      : `attachment; filename="ORIGINAL_IMAGE_DOC_${record.instrumentNumber}_${record.docType.replace(/[^a-zA-Z0-9]/g, '_')}.pdf"`;
 
-    return new NextResponse(Buffer.from(pdfBytes), {
+    return new NextResponse(Buffer.from(originalPdfBytes), {
       headers: {
         'Content-Type': 'application/pdf',
         'Content-Disposition': disposition,

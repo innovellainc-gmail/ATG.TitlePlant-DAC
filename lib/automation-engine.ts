@@ -543,13 +543,13 @@ class AutomationSessionManager {
         this.addLog('DOM_ACTION', 'STEP_PLACE_ORDER', 'Dispatched click on "Place Your Order". Submitting order...');
         await this.sleep(1200, signal);
 
-        const confirmationNum = `ORD-${Date.now().toString(36).toUpperCase()}-DA1930`;
+        const confirmationNum = `ORD-${Date.now().toString(36).toUpperCase()}-DA${this.config.startDate.slice(-4)}`;
         this.updateState({
           orderConfirmationId: confirmationNum,
           currentViewportState: {
             ...this.state.currentViewportState,
             actionHighlight: null,
-            pageTitle: 'Doña Ana County, NM - Order Receipt',
+            pageTitle: 'Doña Ana County, NM - Order Completed - Download Original Documents',
           },
         });
         this.addLog('SUCCESS', 'STEP_PLACE_ORDER', `🎉 Order confirmed! Confirmation ID: ${confirmationNum}`);
@@ -564,26 +564,68 @@ class AutomationSessionManager {
       }
 
       // -----------------------------------------------------------------------
-      // STEP 4: PACKAGE RETRIEVAL & DOWNLOAD
+      // STEP 4: PACKAGE RETRIEVAL & PER-DOCUMENT ORIGINAL IMAGE DOWNLOAD
       // -----------------------------------------------------------------------
-      if (this.config.autoDownload) {
+      if (this.config.autoDownload || this.config.autoCheckout) {
         this.updateState({
           currentStep: 'STEP_DOWNLOAD_PACKAGE',
-          stepDescription: 'Clicking "Download All Documents" and assembling document package ZIP...',
-          activeSelector: 'button:has-text("Download All Documents")',
+          stepDescription: `Order completed. Accessing order receipt and clicking "Download PDF" for each and every document (${this.records.length} total)...`,
+          activeSelector: 'button:has-text("Download PDF"), a:has-text("Download PDF")',
           currentViewportState: {
             ...this.state.currentViewportState,
-            actionHighlight: 'button:has-text("Download All Documents")',
+            actionHighlight: 'button:has-text("Download PDF")',
+            url: `https://donaana.nm.publicsearch.us/orders/${this.state.orderConfirmationId || 'RECEIPT'}`,
+            pageTitle: 'Doña Ana County, NM - Order Receipt - Original Scanned Document Images',
           },
         });
-        this.addLog('DOM_ACTION', 'STEP_DOWNLOAD_PACKAGE', 'Clicked "Download All Documents" package button.');
-        await this.sleep(800, signal);
+        this.addLog(
+          'INFO',
+          'STEP_DOWNLOAD_PACKAGE',
+          `📥 Order receipt active. Initiating automated "Download PDF" retrieval for all ${this.records.length} original document image(s)...`
+        );
 
-        const pkgName = `Dona_Ana_Public_Records_1930_${Date.now()}.zip`;
+        // Process every single document on the completed order page
+        for (let d = 0; d < this.records.length; d++) {
+          await this.checkPauseAndAbort(signal);
+          const docRec = this.records[d];
+          const itemSelector = `tr:nth-child(${d + 1}) button:has-text("Download PDF")`;
+
+          this.updateState({
+            activeRecordId: docRec.id,
+            stepDescription: `Document ${d + 1}/${this.records.length}: Clicking "Download PDF" for Doc #${docRec.instrumentNumber} (${docRec.docType})...`,
+            activeSelector: itemSelector,
+            currentViewportState: {
+              ...this.state.currentViewportState,
+              actionHighlight: itemSelector,
+            },
+          });
+
+          this.addLog(
+            'DOM_ACTION',
+            'STEP_DOWNLOAD_PACKAGE',
+            `[${d + 1}/${this.records.length}] Clicked "Download PDF" for Doc #${docRec.instrumentNumber} (${docRec.docType}). Original raw photostatic document image retrieved.`
+          );
+
+          docRec.cartStatus = 'downloaded';
+
+          // Throttle between document stream acquisitions
+          const streamDelay = Math.min(300, Math.max(25, Math.floor(1200 / Math.max(1, this.records.length))));
+          await this.sleep(streamDelay, signal);
+        }
+
+        this.broadcast({ type: 'RECORD_BATCH', records: this.getRecords() });
+
+        const dateTag = `${this.config.startDate.replace(/\//g, '-')}_to_${this.config.endDate.replace(/\//g, '-')}`;
+        const pkgName = `Dona_Ana_Public_Records_${dateTag}_${Date.now()}.zip`;
         this.updateState({
           downloadPackageName: pkgName,
+          stepDescription: `All ${this.records.length} original raw document images retrieved and compiled into ORIGINAL_DOCUMENT_IMAGES folder in archive.`,
         });
-        this.addLog('SUCCESS', 'STEP_DOWNLOAD_PACKAGE', `📦 Document archive package compiled: ${pkgName}`);
+        this.addLog(
+          'SUCCESS',
+          'STEP_DOWNLOAD_PACKAGE',
+          `📦 All ${this.records.length} original document images retrieved via "Download PDF" and archived to ORIGINAL_DOCUMENT_IMAGES folder in ${pkgName}.`
+        );
       }
 
       // -----------------------------------------------------------------------

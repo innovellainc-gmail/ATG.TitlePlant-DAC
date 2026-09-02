@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import JSZip from 'jszip';
 import { automationEngine } from '@/lib/automation-engine';
-import { generateRecordPdf, generateOriginalDocumentImagePdf } from '@/lib/pdf-generator';
+import { generateOriginalDocumentImagePdf } from '@/lib/pdf-generator';
 
 export const dynamic = 'force-dynamic';
 
@@ -27,8 +27,7 @@ export async function GET() {
       searchRange: `${config.startDate} to ${config.endDate}`,
       files: records.map((r) => ({
         instrumentNumber: r.instrumentNumber,
-        originalImagePdfFilename: `ORIGINAL_DOCUMENT_IMAGES/ORIGINAL_IMAGE_DOC_${r.instrumentNumber}_${r.docType.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`,
-        generatedPdfFilename: `GENERATED_PDF_DOCUMENTS/DOC_${r.instrumentNumber}_${r.docType.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`,
+        originalImagePdfFilename: `ORIGINAL_DOCUMENT_IMAGES/${r.originalFilename || `Document_${r.instrumentNumber}.pdf`}`,
         detailsJsonFilename: `DOCUMENT_DETAILS/DOC_${r.instrumentNumber}_DETAILS.json`,
         detailsTxtFilename: `DOCUMENT_DETAILS/DOC_${r.instrumentNumber}_DETAILS.txt`,
         docType: r.docType,
@@ -52,9 +51,8 @@ export async function GET() {
       .join('\n');
     zip.file('TITLE_PLANT_INDEX.csv', csvHeader + csvRows);
 
-    // 3. Add Original Document Images, Generated PDF Documents & Details Folders
+    // 3. Add Original Document Images & Details Folders
     const originalImageFolder = zip.folder('ORIGINAL_DOCUMENT_IMAGES');
-    const generatedPdfFolder = zip.folder('GENERATED_PDF_DOCUMENTS');
     const detailsFolder = zip.folder('DOCUMENT_DETAILS');
 
     for (const rec of records) {
@@ -63,17 +61,9 @@ export async function GET() {
       // Add Original Document Image from Cart (.PDF)
       try {
         const originalBytes = await generateOriginalDocumentImagePdf(rec);
-        originalImageFolder?.file(`ORIGINAL_IMAGE_DOC_${rec.instrumentNumber}_${cleanDocType}.pdf`, originalBytes);
+        originalImageFolder?.file(rec.originalFilename || `Document_${rec.instrumentNumber}.pdf`, originalBytes);
       } catch (e) {
-        console.error(`Error generating original image PDF for ${rec.instrumentNumber}:`, e);
-      }
-
-      // Add Generated Record PDF
-      try {
-        const pdfBytes = await generateRecordPdf(rec);
-        generatedPdfFolder?.file(`DOC_${rec.instrumentNumber}_${cleanDocType}.pdf`, pdfBytes);
-      } catch (e) {
-        console.error(`Error generating PDF for ${rec.instrumentNumber}:`, e);
+        console.error(`Error saving original document image for ${rec.instrumentNumber}:`, e);
       }
 
       // Add Detailed JSON index card
@@ -127,11 +117,10 @@ AUTOMATION BATCH ID: ${state.runId}
       `Date Filter: ${config.startDate} - ${config.endDate}\n` +
       `Order ID: ${state.orderConfirmationId || 'DIRECT_RETRIEVAL'}\n\n` +
       `PACKAGE CONTENTS:\n` +
-      `1. ORIGINAL_DOCUMENT_IMAGES/ - High-resolution photostatic/microfiche original document image PDFs exported from the county cart.\n` +
-      `2. GENERATED_PDF_DOCUMENTS/ - Certified formatted public record summary PDFs.\n` +
-      `3. DOCUMENT_DETAILS/ - Structured JSON and TXT metadata index cards.\n` +
-      `4. TITLE_PLANT_INDEX.csv - Delimited index table for title plant ingestion.\n` +
-      `5. INDEX_MANIFEST.json - Comprehensive cryptographic batch manifest.\n`
+      `1. ORIGINAL_DOCUMENT_IMAGES/ - Original photostatic raw document images exported from the county cart via "Download PDF".\n` +
+      `2. DOCUMENT_DETAILS/ - Structured JSON and TXT metadata index cards.\n` +
+      `3. TITLE_PLANT_INDEX.csv - Delimited index table for title plant ingestion.\n` +
+      `4. INDEX_MANIFEST.json - Comprehensive batch manifest.\n`
     );
 
     const arrayBuffer = await zip.generateAsync({ type: 'arraybuffer' });

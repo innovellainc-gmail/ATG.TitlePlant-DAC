@@ -405,6 +405,7 @@ class AutomationSessionManager {
             grantee: recordData.grantee,
             legalDescription: recordData.legalDescription,
             pageCount: recordData.pageCount,
+            originalFilename: `Document_${recordData.instrumentNumber.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`,
             cartStatus: 'processing',
           };
 
@@ -518,21 +519,21 @@ class AutomationSessionManager {
       if (this.config.autoCheckout) {
         this.updateState({
           currentStep: 'STEP_CART_NAVIGATION',
-          stepDescription: 'Navigating to Cart via top navigation bar hyperlink...',
-          activeSelector: 'a[href*="/cart"], a:has-text("Cart")',
+          stepDescription: 'Navigating to Cart via top navigation bar hyperlink... Opening in a new tab page.',
+          activeSelector: 'a:has-text("Cart")',
           currentViewportState: {
             ...this.state.currentViewportState,
-            actionHighlight: 'a[href*="/cart"]',
+            actionHighlight: 'a:has-text("Cart")',
             url: 'https://donaana.nm.publicsearch.us/cart',
             pageTitle: 'Doña Ana County, NM - Shopping Cart',
           },
         });
-        this.addLog('DOM_ACTION', 'STEP_CART_NAVIGATION', 'Clicked "Cart" navigation link. Loading cart view...');
+        this.addLog('DOM_ACTION', 'STEP_CART_NAVIGATION', 'Clicked "Cart" link at the top right of the screen (between "Property Alert" and Help). Opened in a new tab page.');
         await this.sleep(700, signal);
 
         this.updateState({
           currentStep: 'STEP_PLACE_ORDER',
-          stepDescription: 'Reviewing cart manifest and clicking "Place Your Order" button...',
+          stepDescription: 'Reviewing cart manifest and clicking "Place Your Order" button in the new tab page...',
           activeSelector: 'button:has-text("Place Your Order")',
           currentViewportState: {
             ...this.state.currentViewportState,
@@ -540,7 +541,7 @@ class AutomationSessionManager {
           },
         });
         this.addLog('SELECTOR_HIT', 'STEP_PLACE_ORDER', 'Resolved selector: button:has-text("Place Your Order")');
-        this.addLog('DOM_ACTION', 'STEP_PLACE_ORDER', 'Dispatched click on "Place Your Order". Submitting order...');
+        this.addLog('DOM_ACTION', 'STEP_PLACE_ORDER', 'Clicked "Place Your Order" button in the new tab page. Submitting order...');
         await this.sleep(1200, signal);
 
         const confirmationNum = `ORD-${Date.now().toString(36).toUpperCase()}-DA${this.config.startDate.slice(-4)}`;
@@ -569,11 +570,11 @@ class AutomationSessionManager {
       if (this.config.autoDownload || this.config.autoCheckout) {
         this.updateState({
           currentStep: 'STEP_DOWNLOAD_PACKAGE',
-          stepDescription: `Order completed. Accessing order receipt and clicking "Download PDF" for each and every document (${this.records.length} total)...`,
-          activeSelector: 'button:has-text("Download PDF"), a:has-text("Download PDF")',
+          stepDescription: `Waiting for the Cart tab page to reload, then clicking "Download All Documents"...`,
+          activeSelector: 'button:has-text("Download All Documents"), a:has-text("Download All Documents")',
           currentViewportState: {
             ...this.state.currentViewportState,
-            actionHighlight: 'button:has-text("Download PDF")',
+            actionHighlight: 'button:has-text("Download All Documents")',
             url: `https://donaana.nm.publicsearch.us/orders/${this.state.orderConfirmationId || 'RECEIPT'}`,
             pageTitle: 'Doña Ana County, NM - Order Receipt - Original Scanned Document Images',
           },
@@ -581,36 +582,21 @@ class AutomationSessionManager {
         this.addLog(
           'INFO',
           'STEP_DOWNLOAD_PACKAGE',
-          `📥 Order receipt active. Initiating automated "Download PDF" retrieval for all ${this.records.length} original document image(s)...`
+          `📥 Cart tab page reloaded. Initiating automated "Download All Documents" retrieval for the .zip file containing all original document images...`
+        );
+        
+        await this.sleep(800, signal);
+        
+        this.addLog(
+          'DOM_ACTION',
+          'STEP_DOWNLOAD_PACKAGE',
+          `Clicked "Download All Documents" button. Saving the .zip file and registering it into the ORIGINAL_DOCUMENT_IMAGES package manifest.`
         );
 
-        // Process every single document on the completed order page
+        // Process every single document
         for (let d = 0; d < this.records.length; d++) {
-          await this.checkPauseAndAbort(signal);
           const docRec = this.records[d];
-          const itemSelector = `tr:nth-child(${d + 1}) button:has-text("Download PDF")`;
-
-          this.updateState({
-            activeRecordId: docRec.id,
-            stepDescription: `Document ${d + 1}/${this.records.length}: Clicking "Download PDF" for Doc #${docRec.instrumentNumber} (${docRec.docType})...`,
-            activeSelector: itemSelector,
-            currentViewportState: {
-              ...this.state.currentViewportState,
-              actionHighlight: itemSelector,
-            },
-          });
-
-          this.addLog(
-            'DOM_ACTION',
-            'STEP_DOWNLOAD_PACKAGE',
-            `[${d + 1}/${this.records.length}] Clicked "Download PDF" for Doc #${docRec.instrumentNumber} (${docRec.docType}). Original raw photostatic document image retrieved.`
-          );
-
           docRec.cartStatus = 'downloaded';
-
-          // Throttle between document stream acquisitions
-          const streamDelay = Math.min(300, Math.max(25, Math.floor(1200 / Math.max(1, this.records.length))));
-          await this.sleep(streamDelay, signal);
         }
 
         this.broadcast({ type: 'RECORD_BATCH', records: this.getRecords() });

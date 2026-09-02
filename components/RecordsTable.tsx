@@ -248,7 +248,7 @@ export const RecordsTable: React.FC<RecordsTableProps> = ({
                       </button>
                       <a
                         href={`/api/automation/document-pdf?id=${rec.id}&type=original`}
-                        download={`ORIGINAL_IMAGE_DOC_${rec.instrumentNumber}_${rec.docType.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`}
+                        download={rec.originalFilename || `Document_${rec.instrumentNumber}.pdf`}
                         target="_blank"
                         rel="noreferrer"
                         className="inline-flex items-center gap-1 px-2 py-1 rounded bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-[10px] font-bold cursor-pointer transition-colors"
@@ -360,7 +360,7 @@ export const RecordsTable: React.FC<RecordsTableProps> = ({
                 </button>
                 <a
                   href={`/api/automation/document-pdf?id=${selectedRecord.id}&type=original`}
-                  download={`ORIGINAL_IMAGE_DOC_${selectedRecord.instrumentNumber}_${selectedRecord.docType.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`}
+                  download={selectedRecord.originalFilename || `Document_${selectedRecord.instrumentNumber}.pdf`}
                   target="_blank"
                   rel="noreferrer"
                   className="flex items-center gap-1 px-2.5 py-2 rounded bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 text-xs font-semibold cursor-pointer transition-colors"
@@ -371,16 +371,6 @@ export const RecordsTable: React.FC<RecordsTableProps> = ({
                 </a>
               </div>
               <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-slate-200">
-                <a
-                  href={`/api/automation/document-pdf?id=${selectedRecord.id}&type=generated`}
-                  download={`DOC_${selectedRecord.instrumentNumber}_${selectedRecord.docType.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-xs font-semibold cursor-pointer transition-colors"
-                >
-                  <Download className="w-3.5 h-3.5 text-blue-600" />
-                  <span>Generated .PDF</span>
-                </a>
                 <a
                   href={`/api/automation/document-pdf?id=${selectedRecord.id}&format=json`}
                   download={`DOC_${selectedRecord.instrumentNumber}_DETAILS.json`}
@@ -460,7 +450,7 @@ export const RecordsTable: React.FC<RecordsTableProps> = ({
 
                 <a
                   href={`/api/automation/document-pdf?id=${viewingOriginalRecord.id}&type=original`}
-                  download={`ORIGINAL_IMAGE_DOC_${viewingOriginalRecord.instrumentNumber}_${viewingOriginalRecord.docType.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`}
+                  download={viewingOriginalRecord.originalFilename || `Document_${viewingOriginalRecord.instrumentNumber}.pdf`}
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold shadow-xs cursor-pointer transition-colors"
                   title="Download Original Document Image PDF"
                 >
@@ -821,7 +811,7 @@ export const RecordsTable: React.FC<RecordsTableProps> = ({
               <div className="flex items-center gap-2">
                 <a
                   href={`/api/automation/document-pdf?id=${viewingOriginalRecord.id}&type=original`}
-                  download={`ORIGINAL_IMAGE_DOC_${viewingOriginalRecord.instrumentNumber}_${viewingOriginalRecord.docType.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`}
+                  download={viewingOriginalRecord.originalFilename || `Document_${viewingOriginalRecord.instrumentNumber}.pdf`}
                   className="px-3 py-1 rounded bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold cursor-pointer transition-colors shadow-2xs flex items-center gap-1.5"
                 >
                   <Download className="w-3 h-3" />

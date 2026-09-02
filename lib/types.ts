@@ -41,6 +41,7 @@ export interface PublicRecord {
   grantee: string;
   legalDescription: string;
   pageCount: number;
+  originalFilename?: string;
   cartStatus: 'pending' | 'processing' | 'in_cart' | 'order_placed' | 'downloaded' | 'failed';
   inCartTimestamp?: number;
   pageNumber: number;

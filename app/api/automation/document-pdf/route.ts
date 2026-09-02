@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { automationEngine } from '@/lib/automation-engine';
-import { generateRecordPdf, generateOriginalDocumentImagePdf } from '@/lib/pdf-generator';
+import { generateOriginalDocumentImagePdf } from '@/lib/pdf-generator';
 
 export const dynamic = 'force-dynamic';
 
@@ -10,7 +10,6 @@ export async function GET(req: NextRequest) {
     const id = searchParams.get('id');
     const instrument = searchParams.get('instrument');
     const format = searchParams.get('format') || 'pdf';
-    const type = searchParams.get('type') || 'original'; // Default to original document image as retrieved from cart
     const view = searchParams.get('view') === 'inline';
 
     const records = automationEngine.getRecords();
@@ -87,26 +86,11 @@ TIMESTAMP          : ${new Date().toISOString()}
       });
     }
 
-    // Generated official record summary PDF explicitly requested
-    if (type === 'generated') {
-      const pdfBytes = await generateRecordPdf(record);
-      const disposition = view
-        ? 'inline'
-        : `attachment; filename="DOC_${record.instrumentNumber}_${record.docType.replace(/[^a-zA-Z0-9]/g, '_')}.pdf"`;
-
-      return new NextResponse(Buffer.from(pdfBytes), {
-        headers: {
-          'Content-Type': 'application/pdf',
-          'Content-Disposition': disposition,
-        },
-      });
-    }
-
-    // Default: Original raw photostatic document image PDF as retrieved from website cart
+    // Original photostatic raw document image PDF as retrieved from website cart
     const originalPdfBytes = await generateOriginalDocumentImagePdf(record);
     const disposition = view
       ? 'inline'
-      : `attachment; filename="ORIGINAL_IMAGE_DOC_${record.instrumentNumber}_${record.docType.replace(/[^a-zA-Z0-9]/g, '_')}.pdf"`;
+      : `attachment; filename="${record.originalFilename || `Document_${record.instrumentNumber}.pdf`}"`;
 
     return new NextResponse(Buffer.from(originalPdfBytes), {
       headers: {
@@ -115,6 +99,6 @@ TIMESTAMP          : ${new Date().toISOString()}
       },
     });
   } catch (error: any) {
-    return NextResponse.json({ error: error.message || 'Failed to generate PDF' }, { status: 500 });
+    return NextResponse.json({ error: error.message || 'Failed to serve original document image' }, { status: 500 });
   }
 }
